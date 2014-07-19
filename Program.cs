@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Drawing;
-using System.IO;
-
-namespace SetDPI
+﻿namespace SetDPI
 {
-    class Program
+    using System;
+    using System.IO;
+
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             if (args.Length < 3)
             {
@@ -17,8 +13,8 @@ namespace SetDPI
                 return;
             }
 
-            float dpiX, dpiY;
-            if (!float.TryParse(args[0], out dpiX) || !float.TryParse(args[1], out dpiY))
+            float newppix, newppiy;
+            if (!float.TryParse(args[0], out newppix) || !float.TryParse(args[1], out newppiy))
             {
                 DisplayHelp();
                 return;
@@ -54,22 +50,23 @@ namespace SetDPI
                         {
                             try
                             {
-                                Bitmap image = new Bitmap(file);
-                                float dpiXoriginal = image.HorizontalResolution;
-                                float dpiYoriginal = image.VerticalResolution;
-                                Bitmap newimage = new Bitmap(image);
-                                image.Dispose();
+                                byte[] filebytes = File.ReadAllBytes(file);
 
-                                newimage.SetResolution(dpiX, dpiY);
-                                newimage.Save(file);
-                                newimage.Dispose();
+                                int[] ppm = PNG.GetPPM(filebytes);
 
-                                Bitmap newimagecheck = new Bitmap(file);
-                                float dpiXnew = newimagecheck.HorizontalResolution;
-                                float dpiYnew = newimagecheck.VerticalResolution;
-                                newimagecheck.Dispose();
+                                double ppix = 0, ppiy = 0;
 
-                                Console.WriteLine("{0} - DPI (x,y): was ({1},{2}), now ({3},{4})", file, dpiXoriginal, dpiYoriginal, dpiXnew, dpiYnew);
+                                if (ppm != null)
+                                {
+                                    ppix = PNG.PPMtoPPI(ppm[0]);
+                                    ppiy = PNG.PPMtoPPI(ppm[1]);
+                                }
+
+                                byte[] updatedbytes = PNG.SetDPI(newppix, newppiy, filebytes);
+
+                                File.WriteAllBytes(file, updatedbytes);
+
+                                Console.WriteLine("{0} - DPI (x,y): was ({1},{2}), now ({3},{4})", file, ppix, ppiy, newppix, newppiy);
                             }
                             catch (Exception ex)
                             {
